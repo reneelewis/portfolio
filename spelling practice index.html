@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spelling Practice</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 480px;
+      margin: 2rem auto;
+      padding: 1rem;
+      text-align: center;
+      background: #f5f7ff;
+      color: #20243a;
+    }
+
+    main {
+      background: white;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 4px 16px #0001;
+    }
+
+    button, input {
+      font: inherit;
+      font-size: 1.1rem;
+      padding: 0.7rem 1rem;
+      margin: 0.4rem;
+      border-radius: 10px;
+    }
+
+    button { cursor: pointer; }
+    input { width: 70%; }
+    #message { min-height: 1.5em; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Spelling Practice</h1>
+    <p>Listen to the word, then spell it.</p>
+
+    <button id="speakButton">Hear the word</button>
+    <form id="answerForm">
+      <label for="answer">Your spelling:</label><br>
+      <input id="answer" autocomplete="off" autocapitalize="none" required>
+      <button type="submit">Check</button>
+    </form>
+
+    <p id="message" aria-live="polite"></p>
+    <button id="hintButton">Get a hint</button>
+    <p id="progress"></p>
+  </main>
+
+  <script>
+    const words = ["who", "what", "when", "where"];
+    let currentIndex = 0;
+    let correct = 0;
+
+    const answerInput = document.querySelector("#answer");
+    const message = document.querySelector("#message");
+    const progress = document.querySelector("#progress");
+
+    function currentWord() {
+      return words[currentIndex];
+    }
+
+    function speakWord() {
+  if (!("speechSynthesis" in window)) {
+    message.textContent = "Speech isn't available in this browser.";
+    return;
+  }
+
+  const utterance = new SpeechSynthesisUtterance(currentWord());
+  utterance.lang = "en-US"; // Try "en-GB" if you prefer British English
+  utterance.rate = 0.8;
+
+  const voices = speechSynthesis.getVoices();
+  const englishVoice = voices.find(voice =>
+    voice.lang.toLowerCase().startsWith("en-us")
+  );
+
+  if (englishVoice) {
+    utterance.voice = englishVoice;
+  }
+
+  speechSynthesis.cancel();
+  speechSynthesis.speak(utterance);
+}
+
+    function showProgress() {
+      progress.textContent = `Word ${currentIndex + 1} of ${words.length}`;
+    }
+
+    document.querySelector("#speakButton").addEventListener("click", speakWord);
+
+    document.querySelector("#hintButton").addEventListener("click", () => {
+      message.textContent =
+        `Hint: the word starts with “${currentWord()[0]}”.`;
+    });
+
+    document.querySelector("#answerForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const answer = answerInput.value.trim().toLowerCase();
+
+      if (answer === currentWord()) {
+        correct++;
+        message.textContent = "You got it! Nice work.";
+        currentIndex++;
+
+        if (currentIndex === words.length) {
+          message.textContent =
+            `Practice finished! You spelled ${correct} of ${words.length} words correctly.`;
+          answerInput.disabled = true;
+          document.querySelector("#answerForm button").disabled = true;
+          document.querySelector("#hintButton").disabled = true;
+          return;
+        }
+      } else {
+        message.textContent = "Good try. Listen again, then have another go.";
+      }
+
+      answerInput.value = "";
+      answerInput.focus();
+      showProgress();
+    });
+
+    showProgress();
+  </script>
+</body>
+</html>
